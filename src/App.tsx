@@ -52,7 +52,10 @@ function App() {
       <TableDragSelect
         values={values}
         multiSelect={true}
-        onChange={setValues}
+        onChange={(values) => {
+          console.log("TableDragSelect in app onChange", values);
+          setValues(values);
+        }}
         renderCellText={(value) => value.text}
       />
       <table>

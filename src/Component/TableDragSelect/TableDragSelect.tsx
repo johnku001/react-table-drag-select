@@ -1,6 +1,13 @@
 import clone from "clone";
 import clsx from "clsx";
-import React, { useState, CSSProperties, useEffect } from "react";
+import React, {
+  useState,
+  CSSProperties,
+  useEffect,
+  useRef,
+  useCallback,
+} from "react";
+
 import "./TableDragSelect.scss";
 
 export interface Location {
@@ -39,16 +46,15 @@ const TableDragSelect = <T extends CellBasic>({
   onInput,
   onChange,
 }: TableDragSelectProps<T>): JSX.Element => {
-  console.log("Table Render");
+  const startRow = useRef<number>();
+  const startColumn = useRef<number>();
+  const endRow = useRef<number>();
+  const endColumn = useRef<number>();
+  const lastRow = useRef<number>();
+  const lastColumn = useRef<number>();
 
-  const [startRow, setStartRow] = useState<number>();
-  const [startColumn, setStartColumn] = useState<number>();
-  const [endRow, setEndRow] = useState<number>();
-  const [endColumn, setEndColumn] = useState<number>();
-  const [lastRow, setLastRow] = useState<number>();
-  const [lastColumn, setLastColumn] = useState<number>();
-  const [isCurrentSelectMode, setIsCurrentSelectMode] = useState<boolean>();
-  const [selectionStarted, setSelectionStarted] = useState<boolean>(false);
+  const isCurrentSelectMode = useRef<boolean>();
+  const selectionStarted = useRef<boolean>(false);
 
   const handleTouchStartCell = (e: any, location: Location) => {
     const isLeftClick = e.button === 0;
@@ -58,28 +64,28 @@ const TableDragSelect = <T extends CellBasic>({
     console.log("Table handleTouchStartCell e.button", e.button);
     console.log(
       "Table handleTouchStartCell selectionStarted ",
-      selectionStarted
+      selectionStarted.current
     );
 
     console.log(
       "Table handleTouchStartCell !selectionStarted && (isLeftClick || isTouch",
-      !selectionStarted && (isLeftClick || isTouch)
+      !selectionStarted.current && (isLeftClick || isTouch)
     );
 
-    if (!selectionStarted && (isLeftClick || isTouch)) {
+    if (!selectionStarted.current && (isLeftClick || isTouch)) {
       e.preventDefault();
       const { row, column } = location;
       // onSelectionStart({ row, column });
 
-      setStartRow(row);
-      setStartColumn(column);
-      setEndRow(row);
-      setEndColumn(column);
-      setIsCurrentSelectMode(!values[row][column].selected);
-      setSelectionStarted(true);
+      startRow.current = row;
+      startColumn.current = column;
+      endRow.current = row;
+      endColumn.current = column;
+      isCurrentSelectMode.current = !values[row][column].selected;
+      selectionStarted.current = true;
       console.log(
         "Table handleTouchStartCell after calling selectionStarted ",
-        selectionStarted
+        selectionStarted.current
       );
     }
 
@@ -88,26 +94,28 @@ const TableDragSelect = <T extends CellBasic>({
 
   const handleTouchMoveCell = (e: any, location: Location) => {
     // console.log("Table handleTouchMoveCell", e);
-    if (selectionStarted) {
+    if (selectionStarted.current) {
       e.preventDefault();
       const { row, column } = location;
 
-      if (endRow !== row || endColumn !== column) {
+      if (endRow.current !== row || endColumn.current !== column) {
         const nextRowCount =
-          startRow === undefined && endRow === undefined
+          startRow.current === undefined && endRow.current === undefined
             ? 0
-            : Math.abs(row - (startRow ? startRow : 0)) + 1;
+            : Math.abs(row - (startRow.current ? startRow.current : 0)) + 1;
         const nextColumnCount =
-          startColumn === undefined && endColumn === undefined
+          startColumn.current === undefined && endColumn === undefined
             ? 0
-            : Math.abs(column - (startColumn ? startColumn : 0)) + 1;
+            : Math.abs(
+                column - (startColumn.current ? startColumn.current : 0)
+              ) + 1;
 
         if (nextRowCount <= maxRows) {
-          setEndRow(row);
+          endRow.current = row;
         }
 
         if (nextColumnCount <= maxColumns) {
-          setEndColumn(column);
+          endColumn.current = column;
         }
       }
     }
@@ -119,34 +127,41 @@ const TableDragSelect = <T extends CellBasic>({
     console.log("Table handleTouchEndWindow e.button", e.button);
     console.log(
       "Table handleTouchEndWindow selectionStarted ",
-      selectionStarted
+      selectionStarted.current
     );
     const isTouch = e.type !== "mousedown";
 
     console.log("Table handleTouchEndWindow isTouch ", isTouch);
     console.log("Table handleTouchEndWindow isLeftClick ", isLeftClick);
-    if (selectionStarted && (isLeftClick || isTouch)) {
+    if (selectionStarted.current && (isLeftClick || isTouch)) {
       console.log("Table handleTouchEndWindow", e);
       let tmpValue = clone(values);
-      const minRow = Math.min(startRow ? startRow : 0, endRow ? endRow : 0);
-      const maxRow = Math.max(startRow ? startRow : 0, endRow ? endRow : 0);
+      const minRow = Math.min(
+        startRow.current ? startRow.current : 0,
+        endRow.current ? endRow.current : 0
+      );
+      const maxRow = Math.max(
+        startRow.current ? startRow.current : 0,
+        endRow.current ? endRow.current : 0
+      );
       for (let row = minRow; row <= maxRow; row++) {
         const minColumn = Math.min(
-          startColumn ? startColumn : 0,
-          endColumn ? endColumn : 0
+          startColumn.current ? startColumn.current : 0,
+          endColumn.current ? endColumn.current : 0
         );
         const maxColumn = Math.max(
-          startColumn ? startColumn : 0,
-          endColumn ? endColumn : 0
+          startColumn.current ? startColumn.current : 0,
+          endColumn.current ? endColumn.current : 0
         );
+        console.log("isCurrentSelectMode", isCurrentSelectMode.current);
         for (let column = minColumn; column <= maxColumn; column++) {
           tmpValue[row][column].selected =
-            !tmpValue[row][column].disabled && isCurrentSelectMode
-              ? isCurrentSelectMode
+            !tmpValue[row][column].disabled && isCurrentSelectMode.current
+              ? isCurrentSelectMode.current
               : false;
         }
       }
-      setSelectionStarted(false);
+      selectionStarted.current = false;
       onChange(tmpValue);
     }
     console.log("----------------------");
@@ -156,7 +171,7 @@ const TableDragSelect = <T extends CellBasic>({
     const isLeftClick = e.button === 0;
     if (isLeftClick) {
       const { row, column } = location;
-      if (!(row === lastRow && column === lastColumn)) {
+      if (!(row === lastRow.current && column === lastColumn.current)) {
         let tmpValue = clone(values);
         values.map((row: T[], index: number) => {
           return row.map(
@@ -168,8 +183,8 @@ const TableDragSelect = <T extends CellBasic>({
           tmpValue[row][column].selected = true;
         }
         onChange(values);
-        setLastColumn(column);
-        setLastRow(row);
+        lastColumn.current = column;
+        lastRow.current = row;
 
         // console.log('isLeftClick ', isLeftClick);
         // console.log('row ', row);
@@ -192,26 +207,49 @@ const TableDragSelect = <T extends CellBasic>({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const isCellBeingSelected = (row: number, column: number) => {
-    const minRow = Math.min(startRow ? startRow : 0, endRow ? endRow : 0);
-    const maxRow = Math.max(startRow ? startRow : 0, endRow ? endRow : 0);
-    const minColumn = Math.min(
-      startColumn ? startColumn : 0,
-      endColumn ? endColumn : 0
-    );
-    const maxColumn = Math.max(
-      startColumn ? startColumn : 0,
-      endColumn ? endColumn : 0
-    );
-    return (
-      selectionStarted &&
-      row >= minRow &&
-      row <= maxRow &&
-      column >= minColumn &&
-      column <= maxColumn &&
-      multiSelect
-    );
-  };
+
+  const isCellBeingSelected = useCallback(
+    (row: number, column: number) => {
+      const minRow = Math.min(
+        startRow.current ? startRow.current : 0,
+        endRow.current ? endRow.current : 0
+      );
+      const maxRow = Math.max(
+        startRow.current ? startRow.current : 0,
+        endRow.current ? endRow.current : 0
+      );
+      const minColumn = Math.min(
+        startColumn.current ? startColumn.current : 0,
+        endColumn.current ? endColumn.current : 0
+      );
+      const maxColumn = Math.max(
+        startColumn.current ? startColumn.current : 0,
+        endColumn.current ? endColumn.current : 0
+      );
+      console.log(
+        "isCellBeingSelected ",
+        "row = ",
+        row,
+        " column = ",
+        column,
+        selectionStarted.current &&
+          row >= minRow &&
+          row <= maxRow &&
+          column >= minColumn &&
+          column <= maxColumn &&
+          multiSelect
+      );
+      return (
+        selectionStarted.current &&
+        row >= minRow &&
+        row <= maxRow &&
+        column >= minColumn &&
+        column <= maxColumn &&
+        multiSelect
+      );
+    },
+    [startRow, startColumn, endRow, endColumn, multiSelect, selectionStarted]
+  );
   const renderRows = () => (
     <>
       {values.map((row, index) => (
@@ -224,11 +262,12 @@ const TableDragSelect = <T extends CellBasic>({
               onClick={handleOnClick}
               beingSelected={isCellBeingSelected(index, subindex)}
               multiSelect={multiSelect}
+              selected={cell.selected}
+              disabled={cell.disabled}
               style={cell.style}
               displayText={`${renderCellText(cell)} (${index}, ${subindex})`}
               row={index}
               column={subindex}
-              {...cell}
             />
           ))}
         </tr>
