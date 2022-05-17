@@ -32,7 +32,6 @@ const TableDragSelect = <T extends CellBasic>({
   onInput,
   onChange,
 }: TableDragSelectProps<T>): JSX.Element => {
-  console.log("TableDragSelectProps render");
   const [startRow, setStartRow] = useState<number>();
   const [startColumn, seStartColumn] = useState<number>();
   const [endRow, setEndRow] = useState<number>();
@@ -53,7 +52,6 @@ const TableDragSelect = <T extends CellBasic>({
     if (!isSelecting.current && (isLeftClick || isTouch)) {
       e.preventDefault();
       const { row, column } = location;
-      // console.log("handleTouchStartCell location", location);
       isSelectedStartCellSelected.current = values[row][column].selected;
       startRowRef.current = row;
       startColumnRef.current = column;
