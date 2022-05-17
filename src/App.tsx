@@ -47,7 +47,7 @@ const test: TextType[][] = [
 ];
 function App() {
   const [values, setValues] = useState(test);
-  console.log("App render");
+
   return (
     <div className="App">
       <TableDragSelect
