@@ -37,35 +37,21 @@ $xxl: 1400px;
 }
 
 .table-drag-select {
-  /* Stretch horizontally to fill parent */
   width: 100%;
-  /* Keep columns same width */
   table-layout: fixed;
-  /* Disable text selection */
   user-select: none;
-  /* Center in parent */
   margin-left: auto;
   margin-right: auto;
-  /* Remove space between border */
   border-collapse: collapse;
-}
-.table-drag-select {
   td {
     text-align: center;
-    /* Cut off long strings of text with ... */
     text-overflow: ellipsis;
     overflow: hidden;
-    /* Make transparent gaps between cells. Better than relying on margin
-     * because clicking an element's margin doesn't trigger events */
     border: 0.15rem solid transparent;
-    // border-radius: 3%;
     background-clip: padding-box;
-
-    /* Shows more text when text too big to fit into cell */
     padding-left: 0rem;
     padding-right: 0rem;
     font-weight: 500;
-    /* Make cells reasonable size */
     line-height: 2.3rem;
     font-size: 13px!important;
     @include xxl() {
@@ -84,40 +70,30 @@ $xxl: 1400px;
   }
 }
 
-/* Table cells */
-
-/* Cells that can be interacted with */
-.table-drag-select td.cell-enabled {
-  background-color: #ddd;
-  /* Make the cursor a + symbol */
-  cursor: cell;
-}
-.table-drag-select td.cell-enabled-single {
-  background-color: #ddd;
-  cursor: pointer;
-}
 
 /* Cells that cannot be interacted with */
 .table-drag-select {
   td.cell-disabled {
     /* Put yer css here */
   }
-}
-
-/* Cells that have been selected */
-.table-drag-select {
+  td.cell-enabled {
+    background-color: #ddd;
+    cursor: cell;
+  }
+  td.cell-enabled-single {
+    background-color: #ddd;
+    cursor: pointer;
+  }
   td.cell-selected {
     background-color: #4688f4 !important;
     color: white !important;
     // border: solid white 0.16rem !important;
   }
-}
-
-/* Cells that are in the process of being selected */
-.table-drag-select {
   td.cell-being-selected {
     /* This is the blue color you see when you select text with the cursor */
-
+    color: black !important;
     background-color: #a9a9a9 !important;
   }
 }
+
+
