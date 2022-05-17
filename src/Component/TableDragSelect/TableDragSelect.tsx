@@ -1,32 +1,20 @@
-import clsx from "clsx";
-import React, {
+import {
   useState,
-  CSSProperties,
   useEffect,
   useRef,
   useCallback,
+  MouseEventHandler,
 } from "react";
-
+import { CellBasic, Location } from "../../Modal";
+import { Cell } from "./Cell";
 import "./TableDragSelect.scss";
 
-export interface Location {
-  row: number;
-  column: number;
-}
-
-export interface CellBasic {
-  style?: CSSProperties;
-  x?: number;
-  y?: number;
-  selected: boolean;
-  disabled: boolean;
-}
 export interface TableDragSelectPropsBasic<T extends CellBasic> {
   values: T[][];
   maxRows?: number;
   maxColumns?: number;
   setNumberOfSelectedCells?: (numberOfSelectedCells: number) => void;
-  onSelectionStart?: ({ x, y }: { x: number; y: number }) => void;
+  onSelectionStart?: MouseEventHandler<any> | undefined;
   onInput?: () => void;
   onChange: (values: T[][]) => void;
   renderCellText: (value: T) => string;
@@ -59,7 +47,6 @@ const TableDragSelect = <T extends CellBasic>({
   const isSelectedStartCellSelected = useRef<boolean>(false);
 
   const handleTouchStartCell = (e: any, location: Location) => {
-    // console.log("======================");
     const isLeftClick = e.button === 0;
     const isTouch = e.type !== "mousedown";
     isShiftPressing.current = e.shiftKey;
@@ -78,13 +65,13 @@ const TableDragSelect = <T extends CellBasic>({
       setEndColumn(column);
       isSelecting.current = true;
     }
-
-    // console.log("======================");
+    if (onSelectionStart) {
+      onSelectionStart(e);
+    }
   };
 
   const handleTouchMoveCell = (e: any, location: Location) => {
     if (isSelecting.current) {
-      // console.log("handleTouchMoveCell e", e);
       e.preventDefault();
       isShiftPressing.current = e.shiftKey;
       const { row, column } = location;
@@ -114,9 +101,6 @@ const TableDragSelect = <T extends CellBasic>({
   const handleTouchEndWindow = (e: any) => {
     const isLeftClick = e.button === 0;
     const isTouch = e.type !== "mousedown";
-    // console.log("----------------------");
-    // console.log("Table handleTouchEndWindow e ", e);
-
     if (isSelecting.current && (isLeftClick || isTouch)) {
       let tmpValue = [...values];
       const minRow = Math.min(
@@ -135,14 +119,6 @@ const TableDragSelect = <T extends CellBasic>({
         startColumnRef.current ? startColumnRef.current : 0,
         endColumnRef.current ? endColumnRef.current : 0
       );
-
-      // for (let row = minRow; row <= maxRow; row++) {
-      //   for (let column = minColumn; column <= maxColumn; column++) {
-      //     tmpValue[row][column].selected = !tmpValue[row][column].disabled
-      //       ? true
-      //       : false;
-      //   }
-      // }
       for (let row = 0; row < tmpValue.length; row++) {
         for (let column = 0; column < tmpValue[row].length; column++) {
           tmpValue[row][column].selected =
@@ -157,8 +133,6 @@ const TableDragSelect = <T extends CellBasic>({
               : false;
         }
       }
-      // console.log("handleTouchEndWindow tmpValue", tmpValue);
-      // console.log("----------------------");
       isSelecting.current = false;
       onChange(tmpValue);
     }
@@ -229,58 +203,3 @@ const TableDragSelect = <T extends CellBasic>({
 };
 
 export default TableDragSelect;
-
-export interface CellProps {
-  disabled: boolean;
-  beingSelected: boolean;
-  selected: boolean;
-  column: number;
-  row: number;
-  onTouchStart: (e: any, location: Location) => void;
-  onTouchMove: (e: any, location: Location) => void;
-  style?: CSSProperties;
-  displayText: string;
-}
-
-export const Cell = ({
-  disabled,
-  beingSelected,
-  selected,
-  column,
-  row,
-  onTouchStart,
-  onTouchMove,
-  style,
-  displayText,
-}: CellProps) => {
-  const handleTouchStart = (e: any) => {
-    if (!disabled) {
-      onTouchStart(e, { row, column });
-    }
-  };
-
-  const handleTouchMove = (e: any) => {
-    if (!disabled) {
-      onTouchMove(e, { row, column });
-    }
-  };
-
-  return (
-    <td
-      className={
-        disabled
-          ? "cell-disabled"
-          : clsx(
-              "cell-enabled",
-              selected ? "cell-selected" : "",
-              beingSelected ? "cell-being-selected" : ""
-            )
-      }
-      onMouseDown={handleTouchStart}
-      onMouseMove={handleTouchMove}
-      style={style}
-    >
-      {displayText}
-    </td>
-  );
-};

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 
 import "./App.css";
 import { TableDragSelect } from "./Component";
-import { CellBasic } from "./Component/TableDragSelect/TableDragSelect";
+import { CellBasic } from "./Modal";
 
 interface TextType extends CellBasic {
   text: string;
