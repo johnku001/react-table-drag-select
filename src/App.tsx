@@ -24,7 +24,7 @@ const test: TextType[][] = [
     { selected: false, disabled: false, text: "10" },
   ],
   [
-    { selected: false, disabled: false, text: "11" },
+    { selected: true, disabled: false, text: "11" },
     { selected: false, disabled: false, text: "12" },
     { selected: false, disabled: false, text: "13" },
     { selected: false, disabled: false, text: "14" },
@@ -42,16 +42,16 @@ const test: TextType[][] = [
     { selected: false, disabled: false, text: "22" },
     { selected: false, disabled: false, text: "23" },
     { selected: false, disabled: false, text: "24" },
-    { selected: false, disabled: false, text: "25" },
+    { selected: true, disabled: false, text: "25" },
   ],
 ];
 function App() {
   const [values, setValues] = useState(test);
+  console.log("App render");
   return (
     <div className="App">
       <TableDragSelect
         values={values}
-        multiSelect={true}
         onChange={(values) => {
           setValues(values);
         }}

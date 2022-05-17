@@ -91,7 +91,7 @@ $xxl: 1400px;
   }
   td.cell-being-selected {
     /* This is the blue color you see when you select text with the cursor */
-
+    color: black !important;
     background-color: #a9a9a9 !important;
   }
 }

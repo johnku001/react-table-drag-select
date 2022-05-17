@@ -1,4 +1,3 @@
-import clone from "clone";
 import clsx from "clsx";
 import React, {
   useState,
@@ -26,7 +25,6 @@ export interface TableDragSelectPropsBasic<T extends CellBasic> {
   values: T[][];
   maxRows?: number;
   maxColumns?: number;
-  multiSelect: boolean;
   setNumberOfSelectedCells?: (numberOfSelectedCells: number) => void;
   onSelectionStart?: ({ x, y }: { x: number; y: number }) => void;
   onInput?: () => void;
@@ -41,12 +39,12 @@ const TableDragSelect = <T extends CellBasic>({
   values,
   maxRows,
   maxColumns,
-  multiSelect,
   renderCellText,
   onSelectionStart,
   onInput,
   onChange,
 }: TableDragSelectProps<T>): JSX.Element => {
+  console.log("TableDragSelectProps render");
   const [startRow, setStartRow] = useState<number>();
   const [startColumn, seStartColumn] = useState<number>();
   const [endRow, setEndRow] = useState<number>();
@@ -56,18 +54,20 @@ const TableDragSelect = <T extends CellBasic>({
   const endRowRef = useRef<number>();
   const endColumnRef = useRef<number>();
 
-  const isCurrentSelectMode = useRef<boolean>();
   const isSelecting = useRef<boolean>(false);
+  const isShiftPressing = useRef<boolean>(false);
+  const isSelectedStartCellSelected = useRef<boolean>(false);
 
   const handleTouchStartCell = (e: any, location: Location) => {
-    console.log("======================");
+    // console.log("======================");
     const isLeftClick = e.button === 0;
     const isTouch = e.type !== "mousedown";
-
+    isShiftPressing.current = e.shiftKey;
     if (!isSelecting.current && (isLeftClick || isTouch)) {
       e.preventDefault();
       const { row, column } = location;
-      console.log("handleTouchStartCell location", location);
+      // console.log("handleTouchStartCell location", location);
+      isSelectedStartCellSelected.current = values[row][column].selected;
       startRowRef.current = row;
       startColumnRef.current = column;
       endRowRef.current = row;
@@ -76,20 +76,18 @@ const TableDragSelect = <T extends CellBasic>({
       seStartColumn(column);
       setEndRow(row);
       setEndColumn(column);
-
-      isCurrentSelectMode.current = !values[row][column].selected;
       isSelecting.current = true;
     }
 
-    console.log("======================");
+    // console.log("======================");
   };
 
   const handleTouchMoveCell = (e: any, location: Location) => {
     if (isSelecting.current) {
-      console.log("handleTouchMoveCell e", e);
+      // console.log("handleTouchMoveCell e", e);
       e.preventDefault();
+      isShiftPressing.current = e.shiftKey;
       const { row, column } = location;
-
       if (endRow !== row || endColumn !== column) {
         const nextRowCount =
           startRow === undefined && endRow === undefined
@@ -116,11 +114,11 @@ const TableDragSelect = <T extends CellBasic>({
   const handleTouchEndWindow = (e: any) => {
     const isLeftClick = e.button === 0;
     const isTouch = e.type !== "mousedown";
-    console.log("----------------------");
-    console.log("Table handleTouchEndWindow e ", e);
+    // console.log("----------------------");
+    // console.log("Table handleTouchEndWindow e ", e);
 
     if (isSelecting.current && (isLeftClick || isTouch)) {
-      let tmpValue = clone(values);
+      let tmpValue = [...values];
       const minRow = Math.min(
         startRowRef.current ? startRowRef.current : 0,
         endRowRef.current ? endRowRef.current : 0
@@ -129,44 +127,50 @@ const TableDragSelect = <T extends CellBasic>({
         startRowRef.current ? startRowRef.current : 0,
         endRowRef.current ? endRowRef.current : 0
       );
+      const minColumn = Math.min(
+        startColumnRef.current ? startColumnRef.current : 0,
+        endColumnRef.current ? endColumnRef.current : 0
+      );
+      const maxColumn = Math.max(
+        startColumnRef.current ? startColumnRef.current : 0,
+        endColumnRef.current ? endColumnRef.current : 0
+      );
 
-      for (let row = minRow; row <= maxRow; row++) {
-        const minColumn = Math.min(
-          startColumnRef.current ? startColumnRef.current : 0,
-          endColumnRef.current ? endColumnRef.current : 0
-        );
-        const maxColumn = Math.max(
-          startColumnRef.current ? startColumnRef.current : 0,
-          endColumnRef.current ? endColumnRef.current : 0
-        );
-        console.log(
-          "handleTouchEndWindow isCurrentSelectMode",
-          isCurrentSelectMode.current
-        );
-        for (let column = minColumn; column <= maxColumn; column++) {
+      // for (let row = minRow; row <= maxRow; row++) {
+      //   for (let column = minColumn; column <= maxColumn; column++) {
+      //     tmpValue[row][column].selected = !tmpValue[row][column].disabled
+      //       ? true
+      //       : false;
+      //   }
+      // }
+      for (let row = 0; row < tmpValue.length; row++) {
+        for (let column = 0; column < tmpValue[row].length; column++) {
           tmpValue[row][column].selected =
-            !tmpValue[row][column].disabled && isCurrentSelectMode.current
-              ? isCurrentSelectMode.current
+            !tmpValue[row][column].disabled &&
+            row <= maxRow &&
+            column <= maxColumn &&
+            row >= minRow &&
+            column >= minColumn
+              ? !isSelectedStartCellSelected.current
+              : isShiftPressing.current
+              ? values[row][column].selected
               : false;
         }
       }
-      console.log("handleTouchEndWindow tmpValue", tmpValue);
-      console.log("----------------------");
+      // console.log("handleTouchEndWindow tmpValue", tmpValue);
+      // console.log("----------------------");
       isSelecting.current = false;
       onChange(tmpValue);
     }
   };
 
   useEffect(() => {
-    if (multiSelect) {
-      window.addEventListener("mouseup", handleTouchEndWindow);
-      window.addEventListener("touchend", handleTouchEndWindow);
-    }
+    window.addEventListener("mouseup", handleTouchEndWindow);
+    window.addEventListener("touchend", handleTouchEndWindow);
+
     return () => {
-      if (multiSelect) {
-        window.removeEventListener("mouseup", handleTouchEndWindow);
-        window.removeEventListener("touchend", handleTouchEndWindow);
-      }
+      window.removeEventListener("mouseup", handleTouchEndWindow);
+      window.removeEventListener("touchend", handleTouchEndWindow);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -189,11 +193,10 @@ const TableDragSelect = <T extends CellBasic>({
         row >= minRow &&
         row <= maxRow &&
         column >= minColumn &&
-        column <= maxColumn &&
-        multiSelect
+        column <= maxColumn
       );
     },
-    [startRow, startColumn, endRow, endColumn, multiSelect]
+    [startRow, startColumn, endRow, endColumn]
   );
   const renderRows = () => (
     <>
@@ -205,11 +208,10 @@ const TableDragSelect = <T extends CellBasic>({
               onTouchStart={handleTouchStartCell}
               onTouchMove={handleTouchMoveCell}
               beingSelected={isCellBeingSelected(index, subindex)}
-              multiSelect={multiSelect}
               selected={cell.selected}
               disabled={cell.disabled}
               style={cell.style}
-              displayText={`${renderCellText(cell)} (${index}, ${subindex})`}
+              displayText={`${renderCellText(cell)}`}
               row={index}
               column={subindex}
             />
@@ -236,7 +238,6 @@ export interface CellProps {
   row: number;
   onTouchStart: (e: any, location: Location) => void;
   onTouchMove: (e: any, location: Location) => void;
-  multiSelect: boolean;
   style?: CSSProperties;
   displayText: string;
 }
@@ -249,7 +250,6 @@ export const Cell = ({
   row,
   onTouchStart,
   onTouchMove,
-  multiSelect,
   style,
   displayText,
 }: CellProps) => {
@@ -271,13 +271,13 @@ export const Cell = ({
         disabled
           ? "cell-disabled"
           : clsx(
-              multiSelect ? "cell-enabled" : "cell-enabled-single",
+              "cell-enabled",
               selected ? "cell-selected" : "",
               beingSelected ? "cell-being-selected" : ""
             )
       }
-      onMouseDown={multiSelect ? handleTouchStart : undefined}
-      onMouseMove={multiSelect ? handleTouchMove : undefined}
+      onMouseDown={handleTouchStart}
+      onMouseMove={handleTouchMove}
       style={style}
     >
       {displayText}
