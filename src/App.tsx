@@ -17,7 +17,7 @@ const test: TextType[][] = [
     { selected: false, disabled: false, text: "5" },
   ],
   [
-    { selected: false, disabled: false, text: "6" },
+    { selected: false, disabled: true, text: "6" },
     { selected: false, disabled: false, text: "7" },
     { selected: false, disabled: false, text: "8" },
     { selected: false, disabled: false, text: "8" },
@@ -53,7 +53,6 @@ function App() {
         values={values}
         multiSelect={true}
         onChange={(values) => {
-          console.log("TableDragSelect in app onChange", values);
           setValues(values);
         }}
         renderCellText={(value) => value.text}
